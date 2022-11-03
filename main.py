@@ -1,4 +1,3 @@
-import time
 import pygame
 from pygame import mixer
 import os
@@ -15,7 +14,7 @@ SCROLL_THRESH = 200
 ROWS = 11
 COLS = 200
 
-TILE_TYPES = 22
+TILE_TYPES = 21
 MAX_LEVELS = 1
 screen_scroll = 0
 bg_scroll = 0
@@ -26,6 +25,7 @@ start_intro = False
 TILE_SIZE = 40
 SCREEN_HEIGHT = TILE_SIZE * ROWS
 SCREEN_WIDTH = TILE_SIZE * 25
+ANIMATION_TIMESTEP = 100
 
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption('Shooter')
@@ -84,8 +84,6 @@ item_boxes = {
 	'Ammo'		: ammo_box_img,
 	'Grenade'	: grenade_box_img
 }
-#coins
-coin_img = pygame.image.load('img/coins/0.png').convert_alpha()
 
 
 #define colours
@@ -121,7 +119,6 @@ def reset_level():
 	grenade_group.empty()
 	explosion_group.empty()
 	item_box_group.empty()
-	coin_group.empty()
 	decoration_group.empty()
 	water_group.empty()
 	exit_group.empty()
@@ -404,10 +401,6 @@ class World():
 					elif tile == 20:#create exit
 						exit = Exit(img, x * TILE_SIZE, y * TILE_SIZE)
 						exit_group.add(exit)
-					elif tile == 21:#create coins
-						coin = Coin(img,  x * TILE_SIZE, y * TILE_SIZE)
-						coin_group.add(coin)
-
 
 		return player, health_bar
 
@@ -475,23 +468,6 @@ class ItemBox(pygame.sprite.Sprite):
 				player.grenades += 3
 			#delete the item box
 			self.kill()
-
-class Coin(pygame.sprite.Sprite):
-	def __init__(self, img, x, y):
-		pygame.sprite.Sprite.__init__(self)
-		self.image = img
-		self.rect = self.image.get_rect()
-		self.rect.midtop = (x + TILE_SIZE // 2, y + (TILE_SIZE - self.image.get_height()))
-
-	def update(self):
-		#scroll
-		self.rect.x += screen_scroll
-		
-		#check if the player has picked up the coin
-		if pygame.sprite.collide_rect(self, player):
-			#delete the coin
-			self.kill()
-
 
 
 class HealthBar():
@@ -659,6 +635,306 @@ class ScreenFade():
 
 		return fade_complete
 
+class Boss(pygame.sprite.Sprite):
+    def __init__(self,x, y, speed, scale):
+        pygame.sprite.Sprite.__init__(self)
+        self.immortal = True
+        self.die = False
+        self.speed = speed
+        self.not_yet = False
+        self.take_hit = False
+        self.transform = False
+        self.health = 12000
+        self.max_health = 12000        
+        self.vision = pygame.Rect(0, 0, SCREEN_WIDTH/2, 20)
+        self.shoot_cd = 0
+        self.beam_cd = 5
+        self.anim = []
+        animation_type = ['idle', 'range_attack', 'beam_attack', 'walk', 'jump_attack','death', 'take_hit', 'transform', 'not_yet']
+        for animation in animation_type:
+            num_img = len(os.listdir(f'img/boss/model-2/{animation}/'))
+            temp = []
+            for i in range(num_img):
+                image = pygame.image.load(f'img/boss/model-2/{animation}/{i}.png').convert_alpha()
+                image = pygame.transform.scale(image, (int(image.get_width() * scale), int(image.get_height() * scale)))
+                temp.append(image)
+            self.anim.append(temp)
+        self.index = 0
+        self.action = 0
+        self.boss_attack = pygame.sprite.Group()
+        self.shoot = []
+        self.range_attack = False
+        self.beam_attack = False
+        self.beam_duration = 0
+        self.jump_attack = False
+        self.move_interval = ANIMATION_TIMESTEP
+        self.attack_offset = 1
+        self.image = self.anim[self.action][self.index]
+        self.flip = True
+        self.rect = self.image.get_rect()
+        self.rect.center = (x, y)
+        self.width = self.image.get_width()
+        self.height = self.image.get_height()
+        self.stand_line = -145
+        self.update_time = pygame.time.get_ticks()
+        self.vector_y = 0
+        self.in_air = True
+        self.attacking = False
+        self.pos_x = x
+        self.direction = 1
+        
+    def update(self):
+        self.update_animation()
+        self.check_alive()
+
+        if self.shoot_cd > 0:
+            self.shoot_cd -= 1
+
+    def barrier_pos(self, level_map):
+        player_pos = (int((self.rect.y + self.vector_y + self.stand_line) / self.stand_line), int(self.pos_x / self.stand_line))
+        obj = level_map[player_pos[0]][player_pos[1]]
+        bar_pos = SCREEN_HEIGHT
+        if obj != ' ' and obj != 'C':
+            bar_pos = (player_pos[0] - 1 ) * self.stand_line
+        return bar_pos
+    
+    def change_action(self, new_action):
+        if new_action != self.action:
+            self.action = new_action
+            self.index = 0
+            
+        #update image
+        self.image = self.anim[self.action][self.index]
+        
+    def update_animation(self, run_left, run_right, level_map):
+        pygame.draw.rect(self.image, (255, 0, 0), [0, 0, self.rect.width, self.rect.height], 1)
+        #update position of player
+        if run_left and self.pos_x - self.speed >= 0:
+            self.rect.x -= self.speed
+            self.pos_x -= self.speed
+            self.flip = False
+            self.direction = -1
+        if run_right: #and self.pos_x + self.speed <= map_width:
+            self.rect.x += self.speed
+            self.pos_x += self.speed
+            self.flip = True
+            self.direction = 1
+            
+        if self.in_air == False:
+            self.rect.x -= 0
+            
+        if self.in_air:
+            self.pos_x += 0
+            self.vector_y += GRAVITY
+            if self.vector_y > 10:
+                self.vector_y = 10
+        if self.jump_attack:
+            self.stand_line = -120
+        
+        
+        bar = self.barrier_pos(level_map)
+        if self.rect.y + self.vector_y >= bar:
+            self.rect.y = bar
+            self.vector_y = 0
+            self.in_air = False
+        else:
+            self.in_air = True
+                
+        self.rect.y += self.vector_y
+        
+        if(self.rect.y >= SCREEN_HEIGHT - 2 * TILE_SIZE):
+            self.die = True   
+        
+        #update frame of action
+        if self.range_attack:
+            self.move_interval = ANIMATION_TIMESTEP*0.2
+        if self.jump_attack:
+            self.move_interval = ANIMATION_TIMESTEP*0.5
+        if run_left or run_right:
+            self.move_interval = ANIMATION_TIMESTEP*0.5
+        if self.take_hit:
+            self.move_interval = ANIMATION_TIMESTEP*0.5
+        if pygame.time.get_ticks() - self.update_time > self.move_interval:
+            if self.health == 0:
+                self.die = True
+            if self.shoot_cd > 0:
+                self.shoot_cd -= 1
+            if self.beam_attack:
+                self.beam_duration -= 1
+            self.index += 1
+            if self.index >= len(self.anim[self.action]):
+                if self.range_attack:
+                    self.boss_attack.add(self.shoot.pop(0))
+                    self.move_interval = ANIMATION_TIMESTEP
+                    self.range_attack = False
+                    self.change_action(0)
+                elif self.beam_attack:
+                    if self.shoot:
+                        self.boss_attack.add(self.shoot.pop(0))
+                    if self.beam_duration >= 0:
+                        self.index = len(self.anim[self.action]) - 3
+                    else:
+                        self.beam_attack = False
+                        self.change_action(0)
+                elif self.jump_attack:
+                    self.move_interval = ANIMATION_TIMESTEP
+                    self.boss_attack.add(self.shoot.pop(0))
+                    self.rect.x += 80                    
+                    self.jump_attack = False
+                    self.stand_line = -145                    
+                    self.change_action(0)  
+                elif self.transform:
+                    self.move_interval = ANIMATION_TIMESTEP
+                    self.rect.x += 45
+                    self.transform = False
+                    self.slime_form = True
+                    self.change_action(0)
+                elif self.not_yet:
+                    self.move_interval = ANIMATION_TIMESTEP
+                    self.rect.x += 20
+                    self.not_yet = False
+                    self.revive()
+                elif self.die:
+                    self.index = len(self.anim[self.action]) - 1
+                    if self.immortal:
+                        self.rect.x += 20
+                        self.defense()
+                else:
+                    self.move_interval = ANIMATION_TIMESTEP
+                    self.index = 0
+            self.update_time = pygame.time.get_ticks()
+        
+        #update action of player
+        if self.die:
+            self.change_action(5)
+            return 5
+        # elif self.falling:
+        #     self.change_action(2)
+        #     return 2
+        elif run_left or run_right:
+            self.change_action(3)
+            return 3
+        elif self.range_attack:
+            self.change_action(1)
+            return 1
+        elif self.beam_attack:
+            self.change_action(2)
+            return 2
+        elif self.jump_attack:
+            self.change_action(4)
+            return 4
+        elif self.take_hit:
+            self.change_action(6)
+            return 6
+        elif self.transform:
+            self.change_action(7)
+            return 7
+        elif self.not_yet:
+            self.change_action(8)
+            return 8
+        else:
+            self.change_action(0)
+        return 0
+    
+    def jump(self):
+        self.rect.x -= 80 
+        self.jump_attack = True
+        self.attack(2)
+
+    def revive(self):
+        self.rect.x -= 45
+        self.transform = True
+
+    def defense(self):
+        self.die = False
+        self.rect.x -= 20
+        self.not_yet = True
+    
+    def attack(self, atk_type):
+        if self.shoot_cd == 0:
+            if atk_type == 0:
+                self.attack_offset = 1
+                self.range_attack = True
+            elif atk_type == 1:
+                self.attack_offset = 4
+                self.beam_attack = True
+                self.beam_duration = 30
+            elif atk_type == 2:
+                self.attack_offset = 4
+                self.jump_attack = True
+            self.shoot_cd = 7
+            attack = Attack(self.rect.centerx + self.attack_offset*(self.rect.size[0])*self.direction, self.rect.centery, self.direction, atk_type)
+            self.shoot.append(attack)
+        return 0
+
+    def ai(self, player):
+        self.vision.center = (self.rect.centerx + 75*self.direction, self.rect.centery)
+        
+        if self.vision.colliderect(player.rect):
+            #begin attack
+            self.attack(0)
+    
+    def show(self, surface):
+        surface.blit(pygame.transform.flip(self.image, self.flip, False), self.rect)
+    
+
+class Attack(pygame.sprite.Sprite):
+    def __init__(self, x, y, direction, atk_type):
+        pygame.sprite.Sprite.__init__(self)
+        self.speed = 10
+        self.anim = []
+        self.index = 0
+        self.duration = 30
+        self.stay = False
+        self.type = atk_type
+        self.direction = direction
+        attack_type = ['range_attack', 'beam_attack', 'jump_attack']
+        for animation in attack_type:
+            num_img = len(os.listdir(f'img/boss/attack/{animation}/'))
+            temp = []
+            for i in range(num_img):
+                image = pygame.image.load(f'img/boss/attack/{animation}/{i}.png').convert_alpha()
+                image = pygame.transform.scale(image, (int(image.get_width()), int(image.get_height())))
+                if self.direction == -1:
+                    temp2 = pygame.transform.flip(image, True, False)
+                    image = temp2
+                temp.append(image)
+                temp.append(image)
+            self.anim.append(temp)
+        self.image = self.anim[self.type][self.index]
+        self.rect = self.image.get_rect()
+        self.rect.center = (x, y)
+        
+    def update(self):
+        if self.type == 0:
+            self.rect.x += (self.direction * self.speed)
+
+            if self.rect.right < 0 or self.rect.left > SCREEN_WIDTH - 100:
+                self.kill()
+        elif self.type == 1:
+            self.image = self.anim[self.type][self.index]
+            self.index += 1
+            if self.index >= len(self.anim[self.type]):
+                if self.duration >= 0:
+                    self.duration -= 1
+                    self.index = len(self.anim[self.type]) - 2*2
+                else:
+                    self.duration = 30
+                    self.kill()
+        elif self.type == 2:
+            if not self.stay:
+                self.image = self.anim[self.type][self.index]
+            self.index += 1
+            if self.index >= len(self.anim[self.type]):
+                if self.duration >= 0:
+                    self.stay = True
+                    self.duration -= 4
+                    self.index = len(self.anim[self.type]) - 5*2
+                    self.image = self.anim[self.type][self.index]
+                else:
+                    self.stay = False
+                    self.duration = 30
+                    self.kill()
 
 #create screen fades
 intro_fade = ScreenFade(1, BLACK, 4)
@@ -679,7 +955,8 @@ item_box_group = pygame.sprite.Group()
 decoration_group = pygame.sprite.Group()
 water_group = pygame.sprite.Group()
 exit_group = pygame.sprite.Group()
-coin_group = pygame.sprite.Group()
+boss = Boss(350, 300, 2, 2)
+boss_attack = boss.boss_attack
 
 
 #create empty tile list
@@ -732,6 +1009,12 @@ while run:
 		player.update()
 		player.draw()
 
+		img2 = boss.show(screen)
+
+		#boss attack
+		boss_attack.update()
+		boss_attack.draw(screen)
+
 		for enemy in enemy_group:
 			enemy.ai()
 			enemy.update()
@@ -745,8 +1028,6 @@ while run:
 		decoration_group.update()
 		water_group.update()
 		exit_group.update()
-		coin_group.update()
-
 		bullet_group.draw(screen)
 		grenade_group.draw(screen)
 		explosion_group.draw(screen)
@@ -754,7 +1035,6 @@ while run:
 		decoration_group.draw(screen)
 		water_group.draw(screen)
 		exit_group.draw(screen)
-		coin_group.draw(screen)
 
 		#show intro
 		if start_intro == True:
