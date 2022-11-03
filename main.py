@@ -1,3 +1,4 @@
+import time
 import pygame
 from pygame import mixer
 import os
@@ -14,7 +15,7 @@ SCROLL_THRESH = 200
 ROWS = 11
 COLS = 200
 
-TILE_TYPES = 21
+TILE_TYPES = 22
 MAX_LEVELS = 1
 screen_scroll = 0
 bg_scroll = 0
@@ -83,6 +84,8 @@ item_boxes = {
 	'Ammo'		: ammo_box_img,
 	'Grenade'	: grenade_box_img
 }
+#coins
+coin_img = pygame.image.load('img/coins/0.png').convert_alpha()
 
 
 #define colours
@@ -118,6 +121,7 @@ def reset_level():
 	grenade_group.empty()
 	explosion_group.empty()
 	item_box_group.empty()
+	coin_group.empty()
 	decoration_group.empty()
 	water_group.empty()
 	exit_group.empty()
@@ -400,6 +404,10 @@ class World():
 					elif tile == 20:#create exit
 						exit = Exit(img, x * TILE_SIZE, y * TILE_SIZE)
 						exit_group.add(exit)
+					elif tile == 21:#create coins
+						coin = Coin(img,  x * TILE_SIZE, y * TILE_SIZE)
+						coin_group.add(coin)
+
 
 		return player, health_bar
 
@@ -467,6 +475,23 @@ class ItemBox(pygame.sprite.Sprite):
 				player.grenades += 3
 			#delete the item box
 			self.kill()
+
+class Coin(pygame.sprite.Sprite):
+	def __init__(self, img, x, y):
+		pygame.sprite.Sprite.__init__(self)
+		self.image = img
+		self.rect = self.image.get_rect()
+		self.rect.midtop = (x + TILE_SIZE // 2, y + (TILE_SIZE - self.image.get_height()))
+
+	def update(self):
+		#scroll
+		self.rect.x += screen_scroll
+		
+		#check if the player has picked up the coin
+		if pygame.sprite.collide_rect(self, player):
+			#delete the coin
+			self.kill()
+
 
 
 class HealthBar():
@@ -654,7 +679,7 @@ item_box_group = pygame.sprite.Group()
 decoration_group = pygame.sprite.Group()
 water_group = pygame.sprite.Group()
 exit_group = pygame.sprite.Group()
-
+coin_group = pygame.sprite.Group()
 
 
 #create empty tile list
@@ -720,6 +745,8 @@ while run:
 		decoration_group.update()
 		water_group.update()
 		exit_group.update()
+		coin_group.update()
+
 		bullet_group.draw(screen)
 		grenade_group.draw(screen)
 		explosion_group.draw(screen)
@@ -727,6 +754,7 @@ while run:
 		decoration_group.draw(screen)
 		water_group.draw(screen)
 		exit_group.draw(screen)
+		coin_group.draw(screen)
 
 		#show intro
 		if start_intro == True:
