@@ -14,7 +14,7 @@ SCROLL_THRESH = 200
 ROWS = 11
 COLS = 200
 
-TILE_TYPES = 21
+TILE_TYPES = 23
 MAX_LEVELS = 1
 screen_scroll = 0
 bg_scroll = 0
@@ -122,6 +122,7 @@ def reset_level():
 	decoration_group.empty()
 	water_group.empty()
 	exit_group.empty()
+	boss_group.empty()
 
 	#create empty tile list
 	data = []
@@ -401,7 +402,9 @@ class World():
 					elif tile == 20:#create exit
 						exit = Exit(img, x * TILE_SIZE, y * TILE_SIZE)
 						exit_group.add(exit)
-
+					elif tile == 22:#create boss
+						boss = Boss(x * TILE_SIZE, y * TILE_SIZE, 2, 2)						
+						boss_group.add(boss)
 		return player, health_bar
 
 
@@ -670,11 +673,7 @@ class Boss(pygame.sprite.Sprite):
         self.move_interval = ANIMATION_TIMESTEP
         self.attack_offset = 1
         self.image = self.anim[self.action][self.index]
-        self.flip = True
-        self.rect = self.image.get_rect()
-        self.rect.center = (x, y)
-        self.width = self.image.get_width()
-        self.height = self.image.get_height()
+        self.flip = True        
         self.stand_line = -145
         self.update_time = pygame.time.get_ticks()
         self.vector_y = 0
@@ -682,6 +681,10 @@ class Boss(pygame.sprite.Sprite):
         self.attacking = False
         self.pos_x = x
         self.direction = 1
+        self.rect = self.image.get_rect()
+        self.rect.center = (x, y)
+        self.width = self.image.get_width()
+        self.height = self.image.get_height()
         
     def update(self):
         self.update_animation()
@@ -955,8 +958,8 @@ item_box_group = pygame.sprite.Group()
 decoration_group = pygame.sprite.Group()
 water_group = pygame.sprite.Group()
 exit_group = pygame.sprite.Group()
-boss = Boss(350, 300, 2, 2)
-boss_attack = boss.boss_attack
+boss_group = pygame.sprite.Group()
+
 
 
 #create empty tile list
@@ -1009,11 +1012,16 @@ while run:
 		player.update()
 		player.draw()
 
-		img2 = boss.show(screen)
+		
 
 		#boss attack
-		boss_attack.update()
-		boss_attack.draw(screen)
+		for boss in boss_group:			
+			boss_attack = boss.boss_attack
+			boss.ai(player)
+			boss_attack.update()
+			boss_attack.draw(screen)
+			boss.update()
+			boss.show(screen)
 
 		for enemy in enemy_group:
 			enemy.ai()
