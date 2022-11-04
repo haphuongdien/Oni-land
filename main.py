@@ -73,7 +73,7 @@ grenade_fx.set_volume(0.05)
 #button images
 start_img = pygame.image.load('img/start-button.png').convert_alpha()
 exit_img = pygame.image.load('img/exit.png').convert_alpha()
-restart_img = pygame.image.load('img/restart_btn.png').convert_alpha()
+restart_img = pygame.image.load('img/reset.png').convert_alpha()
 #background
 pine1_img = pygame.image.load('img/Background/pine1.png').convert_alpha()
 pine2_img = pygame.image.load('img/Background/pine2.png').convert_alpha()
@@ -1015,7 +1015,7 @@ death_fade = ScreenFade(2, PINK, 4)
 #create buttons
 start_button = button.Button(SCREEN_WIDTH // 2 - 70, SCREEN_HEIGHT // 2 - 150, start_img, 1)
 exit_button = button.Button(SCREEN_WIDTH // 2 - 70, SCREEN_HEIGHT // 2 + 10, exit_img, 1)
-restart_button = button.Button(SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 - 50, restart_img, 2)
+restart_button = button.Button(SCREEN_WIDTH // 2 - 130, SCREEN_HEIGHT // 2 - 100, restart_img, 2)
 
 #create sprite groups
 enemy_group = pygame.sprite.Group()
