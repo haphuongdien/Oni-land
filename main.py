@@ -74,7 +74,7 @@ for x in range(TILE_TYPES):
 #bullet
 bullet_img = pygame.image.load('img/icons/bullet.png').convert_alpha()
 #grenade
-grenade_img = pygame.image.load('img/icons/grenade.png').convert_alpha()
+grenade_img = pygame.transform.scale(pygame.image.load('img/icons/grenade.png').convert_alpha(), (20,20))
 #pick up boxes
 health_box_img = pygame.transform.scale(pygame.image.load('img/icons/health_box.png').convert_alpha(), (TILE_SIZE, TILE_SIZE))
 ammo_box_img = pygame.transform.scale(pygame.image.load('img/icons/ammo_box.png').convert_alpha(), (TILE_SIZE, TILE_SIZE))
@@ -537,9 +537,10 @@ class HealthBar():
         self.health = health
         #calculate health ratio
         ratio = self.health / self.max_health
-        pygame.draw.rect(screen, BLACK, (self.x - 2, self.y - 2, 154, 24))
-        pygame.draw.rect(screen, RED, (self.x, self.y, 150, 20))
-        pygame.draw.rect(screen, GREEN, (self.x, self.y, 150 * ratio, 20))
+        draw_text('HP: ', font, WHITE, self.x, self.y)
+        pygame.draw.rect(screen, BLACK, (90 + self.x - 2, self.y - 2, 154, 24))
+        pygame.draw.rect(screen, RED, (90 + self.x, self.y, 150, 20))
+        pygame.draw.rect(screen, GREEN, ( 90 + self.x, self.y, 150 * ratio, 20))
 
 
 class Bullet(pygame.sprite.Sprite):
@@ -1054,13 +1055,13 @@ while run:
         #show player health
         health_bar.draw(player.health)
         #show ammo
-        draw_text('AMMO: ', font, WHITE, 10, 35)
+        draw_text('MANA: ', font, WHITE, 10, 35)
         for x in range(player.ammo):
-            screen.blit(bullet_img, (90 + (x * 10), 40))
+            screen.blit(bullet_img, (90 + (x * 10), 20))
         #show grenades
-        draw_text('GRENADES: ', font, WHITE, 10, 60)
+        draw_text('BOOM: ', font, WHITE, 10, 60)
         for x in range(player.grenades):
-            screen.blit(grenade_img, (135 + (x * 15), 60))
+            screen.blit(grenade_img, (90 + (x * 15), 60))
         #show coins
         draw_text('COINS:', font, (255,255,0), 750, 20) 
         draw_text(f'x{player.coin}', font, (255,255,0), 860, 20)
