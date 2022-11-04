@@ -1,5 +1,6 @@
 import pygame
 from pygame import mixer
+import math
 import os
 import random
 import csv
@@ -33,6 +34,13 @@ pygame.display.set_caption('Shooter')
 #set framerate
 clock = pygame.time.Clock()
 FPS = 60
+# IMAGE
+bg = pygame.image.load("img/Background/sky_cloud.png").convert()
+# DEFINING MAIN VARIABLES IN SCROLLING
+scroll = 0
+tiles = math.ceil(SCREEN_WIDTH / bg.get_width()) + 1
+
+
 
 
 #define player action variables
@@ -47,6 +55,12 @@ grenade_thrown = False
 #pygame.mixer.music.load('audio/music2.mp3')
 #pygame.mixer.music.set_volume(0.3)
 #pygame.mixer.music.play(-1, 0.0, 5000)
+#music
+music = pygame.mixer.music.load("audio/music.ogg")
+pygame.mixer.music.set_volume(0.1)
+pygame.mixer.music.play()
+btn_fx = pygame.mixer.Sound('audio/button.mp3')
+btn_fx.set_volume(0.1)
 jump_fx = pygame.mixer.Sound('audio/jump.wav')
 jump_fx.set_volume(0.05)
 shot_fx = pygame.mixer.Sound('audio/shot.wav')
@@ -57,8 +71,8 @@ grenade_fx.set_volume(0.05)
 
 #load images
 #button images
-start_img = pygame.image.load('img/start_btn.png').convert_alpha()
-exit_img = pygame.image.load('img/exit_btn.png').convert_alpha()
+start_img = pygame.image.load('img/start-button.png').convert_alpha()
+exit_img = pygame.image.load('img/exit.png').convert_alpha()
 restart_img = pygame.image.load('img/restart_btn.png').convert_alpha()
 #background
 pine1_img = pygame.image.load('img/Background/pine1.png').convert_alpha()
@@ -109,9 +123,9 @@ def draw_bg():
     width = sky_img.get_width()
     for x in range(5):
         screen.blit(sky_img, ((x * width) - bg_scroll * 0.5, 0))
-        screen.blit(mountain_img, ((x * width) - bg_scroll * 0.6, SCREEN_HEIGHT - mountain_img.get_height() - 300))
-        screen.blit(pine1_img, ((x * width) - bg_scroll * 0.7, SCREEN_HEIGHT - pine1_img.get_height() - 150))
-        screen.blit(pine2_img, ((x * width) - bg_scroll * 0.8, SCREEN_HEIGHT - pine2_img.get_height()))
+        #screen.blit(mountain_img, ((x * width) - bg_scroll * 0.6, SCREEN_HEIGHT - mountain_img.get_height() - 300))
+        #screen.blit(pine1_img, ((x * width) - bg_scroll * 0.7, SCREEN_HEIGHT - pine1_img.get_height() - 150))
+        #screen.blit(pine2_img, ((x * width) - bg_scroll * 0.8, SCREEN_HEIGHT - pine2_img.get_height()))
 
 
 #function to reset level
@@ -999,8 +1013,8 @@ death_fade = ScreenFade(2, PINK, 4)
 
 
 #create buttons
-start_button = button.Button(SCREEN_WIDTH // 2 - 130, SCREEN_HEIGHT // 2 - 150, start_img, 1)
-exit_button = button.Button(SCREEN_WIDTH // 2 - 110, SCREEN_HEIGHT // 2 + 50, exit_img, 1)
+start_button = button.Button(SCREEN_WIDTH // 2 - 70, SCREEN_HEIGHT // 2 - 150, start_img, 1)
+exit_button = button.Button(SCREEN_WIDTH // 2 - 70, SCREEN_HEIGHT // 2 + 10, exit_img, 1)
 restart_button = button.Button(SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 - 50, restart_img, 2)
 
 #create sprite groups
@@ -1040,12 +1054,25 @@ while run:
 
     if start_game == False:
         #draw menu
-        screen.fill(BG)
+        #screen.fill(BG)
+        i = 0
+        while(i < tiles):
+            screen.blit(bg, (bg.get_width()*i
+                         + scroll, 0))
+            i += 1
+        # FRAME FOR SCROLLING
+        scroll -= 6
+  
+        # RESET THE SCROLL FRAME
+        if abs(scroll) > bg.get_width():
+            scroll = 0
         #add buttons
         if start_button.draw(screen):
+            btn_fx.play()
             start_game = True
             start_intro = True
         if exit_button.draw(screen):
+            btn_fx.play()
             run = False
     else:
         #update background
