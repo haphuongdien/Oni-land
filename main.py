@@ -14,7 +14,7 @@ SCROLL_THRESH = 200
 ROWS = 11
 COLS = 200
 
-TILE_TYPES = 23
+TILE_TYPES = 24
 MAX_LEVELS = 1
 screen_scroll = 0
 bg_scroll = 0
@@ -76,13 +76,15 @@ bullet_img = pygame.image.load('img/icons/bullet.png').convert_alpha()
 #grenade
 grenade_img = pygame.image.load('img/icons/grenade.png').convert_alpha()
 #pick up boxes
-health_box_img = pygame.image.load('img/icons/health_box.png').convert_alpha()
-ammo_box_img = pygame.image.load('img/icons/ammo_box.png').convert_alpha()
-grenade_box_img = pygame.image.load('img/icons/grenade_box.png').convert_alpha()
+health_box_img = pygame.transform.scale(pygame.image.load('img/icons/health_box.png').convert_alpha(), (TILE_SIZE, TILE_SIZE))
+ammo_box_img = pygame.transform.scale(pygame.image.load('img/icons/ammo_box.png').convert_alpha(), (TILE_SIZE, TILE_SIZE))
+grenade_box_img = pygame.transform.scale(pygame.image.load('img/icons/grenade_box.png').convert_alpha(), (TILE_SIZE, TILE_SIZE))
+star_img = pygame.transform.scale(pygame.image.load('img/icons/star.png').convert_alpha(), (TILE_SIZE, TILE_SIZE))
 item_boxes = {
     'Health'	: health_box_img,
     'Ammo'		: ammo_box_img,
-    'Grenade'	: grenade_box_img
+    'Grenade'	: grenade_box_img,
+    'Star'		: star_img
 }
 
 
@@ -156,6 +158,8 @@ class Soldier(pygame.sprite.Sprite):
         self.frame_index = 0
         self.action = 0
         self.update_time = pygame.time.get_ticks()
+        self.immune = False
+        self.immune_timer = 0
         #ai specific variables
         self.move_counter = 0
         self.vision = pygame.Rect(0, 0, 150, 20)
@@ -189,6 +193,8 @@ class Soldier(pygame.sprite.Sprite):
         #update cooldown
         if self.shoot_cooldown > 0:
             self.shoot_cooldown -= 1
+        if pygame.time.get_ticks() - self.immune_timer >= 5000:
+            self.immune = False
 
 
     def move(self, moving_left, moving_right):
@@ -409,6 +415,10 @@ class World():
                     elif tile == 22:#create boss
                         boss = Boss(x * TILE_SIZE, y * TILE_SIZE, 2, 2)						
                         boss_group.add(boss)
+                    elif tile == 23:#create immune star
+                        item_box = ItemBox('Star', x * TILE_SIZE, y * TILE_SIZE)
+                        item_box_group.add(item_box)
+                        
         return player, health_bar
 
 
@@ -473,6 +483,9 @@ class ItemBox(pygame.sprite.Sprite):
                 player.ammo += 15
             elif self.item_type == 'Grenade':
                 player.grenades += 3
+            elif self.item_type == 'Star':
+                player.immune = True
+                player.immune_timer = pygame.time.get_ticks()
             #delete the item box
             self.kill()
 
@@ -551,9 +564,10 @@ class Bullet(pygame.sprite.Sprite):
 
         #check collision with characters
         if pygame.sprite.spritecollide(player, bullet_group, False):
-            if player.alive:
+            if player.alive and (not player.immune):
                 player.health -= 5
                 self.kill()
+            else: self.kill()
         for enemy in enemy_group:
             if pygame.sprite.spritecollide(enemy, bullet_group, False):
                 if enemy.alive:
