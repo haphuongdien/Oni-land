@@ -67,13 +67,14 @@ shot_fx = pygame.mixer.Sound('audio/shot.wav')
 shot_fx.set_volume(0.05)
 grenade_fx = pygame.mixer.Sound('audio/grenade.wav')
 grenade_fx.set_volume(0.05)
-
+coin_fx = pygame.mixer.Sound('audio/coin.mp3')
+coin_fx.set_volume(0.05)
 
 #load images
 #button images
 start_img = pygame.image.load('img/start-button.png').convert_alpha()
 exit_img = pygame.image.load('img/exit.png').convert_alpha()
-restart_img = pygame.image.load('img/restart_btn.png').convert_alpha()
+restart_img = pygame.image.load('img/reset.png').convert_alpha()
 #background
 pine1_img = pygame.image.load('img/Background/pine1.png').convert_alpha()
 pine2_img = pygame.image.load('img/Background/pine2.png').convert_alpha()
@@ -509,7 +510,7 @@ class Coin(pygame.sprite.Sprite):
         self.animation = []
         for i in range(4):
             img = pygame.image.load(f'img/coins/{i}.png')
-            img = pygame.transform.scale(img, (TILE_SIZE/2, TILE_SIZE/2))
+            img = pygame.transform.scale(img, (TILE_SIZE, TILE_SIZE))
             self.animation.append(img)
         self.frame_index = 0
         self.image = self.animation[self.frame_index]
@@ -535,6 +536,7 @@ class Coin(pygame.sprite.Sprite):
         if pygame.sprite.collide_rect(self, player):
             #update change
             player.coin += 1
+            coin_fx.play()
             #delete the item box
             self.kill()
 
@@ -1015,7 +1017,7 @@ death_fade = ScreenFade(2, PINK, 4)
 #create buttons
 start_button = button.Button(SCREEN_WIDTH // 2 - 70, SCREEN_HEIGHT // 2 - 150, start_img, 1)
 exit_button = button.Button(SCREEN_WIDTH // 2 - 70, SCREEN_HEIGHT // 2 + 10, exit_img, 1)
-restart_button = button.Button(SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 - 50, restart_img, 2)
+restart_button = button.Button(SCREEN_WIDTH // 2 - 130, SCREEN_HEIGHT // 2 - 100, restart_img, 2)
 
 #create sprite groups
 enemy_group = pygame.sprite.Group()
