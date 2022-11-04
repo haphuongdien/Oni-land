@@ -29,7 +29,7 @@ SCREEN_WIDTH = TILE_SIZE * 25
 ANIMATION_TIMESTEP = 100
 
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-pygame.display.set_caption('Shooter')
+pygame.display.set_caption('Oni land')
 
 #set framerate
 clock = pygame.time.Clock()
@@ -1093,6 +1093,12 @@ while run:
         draw_text('COINS:', font, (255,255,0), 750, 20) 
         draw_text(f'x{player.coin}', font, (255,255,0), 860, 20)
         screen.blit(img_list[21], (820, 6))
+        #show immune
+        if player.immune:
+            draw_text('IMMUNE:'+str((5000 - (pygame.time.get_ticks() - player.immune_timer))/1000), font, (255,255,0), 750, 70) 
+            
+        
+
 
 
         player.update()
