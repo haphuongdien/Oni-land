@@ -67,7 +67,8 @@ shot_fx = pygame.mixer.Sound('audio/shot.wav')
 shot_fx.set_volume(0.05)
 grenade_fx = pygame.mixer.Sound('audio/grenade.wav')
 grenade_fx.set_volume(0.05)
-
+coin_fx = pygame.mixer.Sound('audio/coin.mp3')
+coin_fx.set_volume(0.05)
 
 #load images
 #button images
@@ -509,7 +510,7 @@ class Coin(pygame.sprite.Sprite):
         self.animation = []
         for i in range(4):
             img = pygame.image.load(f'img/coins/{i}.png')
-            img = pygame.transform.scale(img, (TILE_SIZE/2, TILE_SIZE/2))
+            img = pygame.transform.scale(img, (TILE_SIZE, TILE_SIZE))
             self.animation.append(img)
         self.frame_index = 0
         self.image = self.animation[self.frame_index]
@@ -535,6 +536,7 @@ class Coin(pygame.sprite.Sprite):
         if pygame.sprite.collide_rect(self, player):
             #update change
             player.coin += 1
+            coin_fx.play()
             #delete the item box
             self.kill()
 
