@@ -110,9 +110,11 @@ WHITE = (255, 255, 255)
 GREEN = (0, 255, 0)
 BLACK = (0, 0, 0)
 PINK = (235, 65, 54)
+YELLOW = (255,255,0)
 
 #define font
 font = pygame.font.SysFont('Futura', 30)
+font2 = pygame.font.SysFont('Futura', 90)
 
 def draw_text(text, font, text_col, x, y):
     img = font.render(text, True, text_col)
@@ -591,6 +593,11 @@ class Bullet(pygame.sprite.Sprite):
                 if enemy.alive:
                     enemy.health -= 25
                     self.kill()
+        for boss in boss_group:
+            if pygame.sprite.spritecollide(boss, bullet_group, False):
+                if boss.alive:
+                    boss.health -= 25
+                    self.kill()
 
 
 
@@ -717,7 +724,7 @@ class Boss(pygame.sprite.Sprite):
         self.speed = speed
         self.scale = scale
         self.shoot_cooldown = 0
-        self.health = 12000
+        self.health = 400
         self.max_health = self.health
         self.direction = 1
         self.vel_y = 0
@@ -730,7 +737,7 @@ class Boss(pygame.sprite.Sprite):
         self.update_time = pygame.time.get_ticks()
         #ai specific variables
         self.move_counter = 0
-        self.vision = pygame.Rect(0, 0, 150, 120)
+        self.vision = pygame.Rect(0, 0, 750, 120)
         self.idling = False
         self.idling_counter = 0
         self.shoot_lst = []
@@ -857,12 +864,11 @@ class Boss(pygame.sprite.Sprite):
 
     def attack(self, type):
         if self.shoot_cooldown == 0:
-            self.shoot_cooldown = 20
+            self.shoot_cooldown = 80
             bullet = Attack(self.rect.centerx + (1 * self.rect.size[0] * self.direction), self.rect.centery, self.direction, type, self.scale * 5)
             boss_atk_group.add(bullet)
             #self.shoot_lst.append(bullet)
             #reduce ammo
-            self.ammo -= 1
             shot_fx.play()
 
 
@@ -875,8 +881,9 @@ class Boss(pygame.sprite.Sprite):
             #check if the ai in near the player
             if self.vision.colliderect(player.rect):
                 #stop running and face the player
-                self.update_action(0)#0: idle
+                #self.update_action(0)#0: idle
                 #shoot
+                #self.attack(0)
                 self.update_action(1)
             else:
                 if self.idling == False:
@@ -906,6 +913,7 @@ class Boss(pygame.sprite.Sprite):
     def update_animation(self):
         #update animation
         ANIMATION_COOLDOWN = 100
+        print(self.frame_index)
         #update image depending on current frame
         self.image = self.animation_list[self.action][self.frame_index]
         #check if enough time has passed since the last update
@@ -917,14 +925,12 @@ class Boss(pygame.sprite.Sprite):
         #if the animation has run out the reset back to the start
         if self.frame_index >= len(self.animation_list[self.action]):
             if self.action == 5:
-                if self.immortal:
-                    self.update_action(8)
-                else:
-                    self.frame_index = len(self.animation_list[self.action]) - 1
+                self.frame_index = len(self.animation_list[self.action]) - 1
             elif self.action == 1:
                 print('in attack')
                 # if self.ammo > 0:
                 self.attack(0)
+                self.update_action(0)
                 # else:
                 # 	self.attack(1)
                 # 	self.ammo = 5
@@ -1017,19 +1023,20 @@ class Attack(pygame.sprite.Sprite):
                 self.kill()
 
         #check collision with characters
-        if pygame.sprite.spritecollide(player, bullet_group, False):
+        if pygame.sprite.spritecollide(player, boss_atk_group, False):
             if player.alive:
                 player.health -= 5
                 self.kill()
-        for enemy in enemy_group:
-            if pygame.sprite.spritecollide(enemy, bullet_group, False):
-                if enemy.alive:
-                    enemy.health -= 25
-                    self.kill()
+        # for boss in boss_group:
+        #     if pygame.sprite.spritecollide(boss, boss_atk_group, False):
+        #         if boss.alive:
+        #             boss.health -= 25
+        #             self.kill()
 
 #create screen fades
 intro_fade = ScreenFade(1, BLACK, 4)
 death_fade = ScreenFade(2, PINK, 4)
+win_fade = ScreenFade(2, YELLOW, 4)
 
 
 #create buttons
@@ -1217,6 +1224,24 @@ while run:
                                 world_data[x][y] = int(tile)
                     world = World()
                     player, health_bar = world.process_data(world_data)
+        if not boss.alive:
+            screen_scroll = 0
+            if win_fade.fade():
+                draw_text('YOU WIN!!!!', font2, RED, SCREEN_WIDTH/2 - 180, 70)
+                if restart_button.draw(screen):
+                    death_fade.fade_counter = 0
+                    start_intro = True
+                    bg_scroll = 0
+                    world_data = reset_level()
+                    #load in level data and create world
+                    with open(f'level{level}_data.csv', newline='') as csvfile:
+                        reader = csv.reader(csvfile, delimiter=',')
+                        for x, row in enumerate(reader):
+                            for y, tile in enumerate(row):
+                                world_data[x][y] = int(tile)
+                    world = World()
+                    player, health_bar = world.process_data(world_data)
+            
 
 
     for event in pygame.event.get():
