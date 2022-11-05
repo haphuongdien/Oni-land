@@ -29,7 +29,7 @@ SCREEN_WIDTH = TILE_SIZE * 25
 ANIMATION_TIMESTEP = 100
 
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-pygame.display.set_caption('Oni land')
+pygame.display.set_caption('Oni Land')
 
 #set framerate
 clock = pygame.time.Clock()
@@ -111,6 +111,7 @@ GREEN = (0, 255, 0)
 BLACK = (0, 0, 0)
 PINK = (235, 65, 54)
 YELLOW = (255,255,0)
+BLUE = (0,191,255)
 
 #define font
 font = pygame.font.SysFont('Futura', 30)
@@ -557,9 +558,9 @@ class HealthBar():
         #calculate health ratio
         ratio = self.health / self.max_health
         draw_text('HP: ', font, WHITE, self.x, self.y)
-        pygame.draw.rect(screen, BLACK, (90 + self.x - 2, self.y - 2, 154, 24))
-        pygame.draw.rect(screen, RED, (90 + self.x, self.y, 150, 20))
-        pygame.draw.rect(screen, GREEN, ( 90 + self.x, self.y, 150 * ratio, 20))
+        pygame.draw.rect(screen, BLACK, (90 - 2, self.y - 2, 154, 24))
+        pygame.draw.rect(screen, RED, (90 , self.y, 150, 20))
+        pygame.draw.rect(screen, GREEN, ( 90 , self.y, 150 * ratio, 20))
 
 
 class Bullet(pygame.sprite.Sprite):
@@ -913,7 +914,7 @@ class Boss(pygame.sprite.Sprite):
     def update_animation(self):
         #update animation
         ANIMATION_COOLDOWN = 100
-        print(self.frame_index)
+        #print(self.frame_index)
         #update image depending on current frame
         self.image = self.animation_list[self.action][self.frame_index]
         #check if enough time has passed since the last update
@@ -927,7 +928,7 @@ class Boss(pygame.sprite.Sprite):
             if self.action == 5:
                 self.frame_index = len(self.animation_list[self.action]) - 1
             elif self.action == 1:
-                print('in attack')
+                #print('in attack')
                 # if self.ammo > 0:
                 self.attack(0)
                 self.update_action(0)
@@ -1034,9 +1035,9 @@ class Attack(pygame.sprite.Sprite):
         #             self.kill()
 
 #create screen fades
-intro_fade = ScreenFade(1, BLACK, 4)
-death_fade = ScreenFade(2, PINK, 4)
-win_fade = ScreenFade(2, YELLOW, 4)
+intro_fade = ScreenFade(1, BLACK, 100)
+death_fade = ScreenFade(2, PINK, 40)
+win_fade = ScreenFade(2, YELLOW, 40)
 
 
 #create buttons
@@ -1111,8 +1112,8 @@ while run:
         health_bar.draw(player.health)
         #show ammo
         draw_text('MANA: ', font, WHITE, 10, 35)
-        for x in range(player.ammo):
-            screen.blit(bullet_img, (90 + (x * 10), 20))
+        pygame.draw.rect(screen, BLACK, (90 - 2, 40 - 2, player.ammo * 10 + 4, 24))
+        pygame.draw.rect(screen, BLUE, (90 , 40, player.ammo * 10, 20))
         #show grenades
         draw_text('BOOM: ', font, WHITE, 10, 60)
         for x in range(player.grenades):
